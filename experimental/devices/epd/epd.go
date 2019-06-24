@@ -105,7 +105,7 @@ type Opts struct {
 }
 
 // NewSPI returns a Dev object that communicates over SPI to a E-Paper display controller.
-func NewSPI(p spi.Port, dc, cs, rst gpio.PinOut, busy gpio.PinIO, opts *Opts) (*Dev, error) {
+func NewSPI(p spi.Port, dc, cs, rst gpio.PinOut, busy gpio.PinIO, opts *Opts, mode *PartialUpdate) (*Dev, error) {
 	if dc == gpio.INVALID {
 		return nil, errors.New("epd: use nil for dc to use 3-wire mode, do not use gpio.INVALID")
 	}
@@ -132,7 +132,7 @@ func NewSPI(p spi.Port, dc, cs, rst gpio.PinOut, busy gpio.PinIO, opts *Opts) (*
 
 	d.Reset()
 
-	if err := d.Init(); err != nil {
+	if err := d.Init(mode); err != nil {
 		return nil, err
 	}
 
@@ -141,12 +141,12 @@ func NewSPI(p spi.Port, dc, cs, rst gpio.PinOut, busy gpio.PinIO, opts *Opts) (*
 
 // NewSPIHat returns a Dev object that communicates over SPI
 // and have the default config for the e-paper hat for raspberry pi
-func NewSPIHat(p spi.Port, opts *Opts) (*Dev, error) {
+func NewSPIHat(p spi.Port, opts *Opts, mode PartialUpdate) (*Dev, error) {
 	dc := rpi.P1_22
 	cs := rpi.P1_24
 	rst := rpi.P1_11
 	busy := rpi.P1_18
-	return NewSPI(p, dc, cs, rst, busy, opts)
+	return NewSPI(p, dc, cs, rst, busy, opts, mode)
 }
 
 // Dev is an open handle to the display controller.
@@ -294,7 +294,7 @@ func (d *Dev) Sleep() error {
 // a device using NewSPI and NewSPIHat methods.
 //
 // It should be only used when you put the device to sleep and need to re-init the device.
-func (d *Dev) Init() error {
+func (d *Dev) Init(mode PartialUpdate) error {
 	if err := d.sendCommand([]byte{driverOutputControl}); err != nil {
 		return err
 	}
@@ -359,7 +359,7 @@ func (d *Dev) Init() error {
 		return err
 	}
 
-	return d.setLut(Full)
+	return d.setLut(mode)
 }
 
 // Reset can be also used to awaken the device
